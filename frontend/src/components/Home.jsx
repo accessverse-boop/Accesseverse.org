@@ -3,7 +3,6 @@ import { ACCESS_VERSE, HOME } from '@/constants/testIds';
 import BeforeAfterSlider from './BeforeAfterSlider';
 import FloatingAccessibilityPanel from './FloatingAccessibilityPanel';
 import DesignSystemView from './DesignSystemView';
-import Dashboard from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
 import ConsultationModal from './ConsultationModal';
 
@@ -155,17 +154,6 @@ export default function Home() {
             >
               Design System
             </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              data-testid={ACCESS_VERSE.adminDashboardTab}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activePage === 'dashboard'
-                  ? 'bg-[#0066FF] text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-[#0B192C] dark:hover:text-white'
-              }`}
-            >
-              Compliance Tracker
-            </button>
           </nav>
 
           {/* Header Action */}
@@ -184,8 +172,6 @@ export default function Home() {
       {/* Conditional Rendering of Views */}
       {activePage === 'design-system' ? (
         <DesignSystemView />
-      ) : activePage === 'dashboard' ? (
-        <Dashboard />
       ) : (
         /* --- HOMEPAGE VIEW --- */
         <>
