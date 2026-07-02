@@ -416,12 +416,12 @@ async def create_consultation(consultation: ConsultationCreate):
     </table>
     """
     
-    await send_notification_email(
+    asyncio.create_task(send_notification_email(
         recipient_email=consultation.email,
         recipient_name=consultation.name,
         form_type="Consultation Booking",
         details_html=details_html
-    )
+    ))
     
     return ConsultationResponse(
         id=consultation_doc.id,
