@@ -13,32 +13,73 @@ import {
   ChevronRight, 
   Users,
   Search,
-  Check
+  Check,
+  Lock,
+  LogOut,
+  ShieldAlert
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const TOKEN_KEY = 'av_admin_token';
 
 export default function Dashboard() {
+  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) || '');
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+
   const [quotes, setQuotes] = useState([]);
   const [consultations, setConsultations] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('quotes'); // 'quotes', 'consultations'
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+
+  const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+
+  const handleLogout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    setToken('');
+    setQuotes([]);
+    setConsultations([]);
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const res = await axios.post(`${API}/auth/login`, {
+        username: loginForm.username,
+        password: loginForm.password,
+      });
+      localStorage.setItem(TOKEN_KEY, res.data.token);
+      setToken(res.data.token);
+      setLoginForm({ username: '', password: '' });
+    } catch (err) {
+      setLoginError(err.response?.data?.detail || 'Login failed. Please try again.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const [quotesRes, consultsRes] = await Promise.all([
-        axios.get(`${API}/quotes`),
-        axios.get(`${API}/consultations`)
+        axios.get(`${API}/quotes`, authHeaders),
+        axios.get(`${API}/consultations`, authHeaders)
       ]);
       setQuotes(quotesRes.data);
       setConsultations(consultsRes.data);
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 401) {
+        handleLogout();
+        return;
+      }
       setError('Failed to fetch data from API. Please verify that the backend is running.');
     } finally {
       setIsLoading(false);
@@ -46,25 +87,30 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (token) {
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const handleUpdateQuoteStatus = async (id, newStatus) => {
     try {
-      const res = await axios.patch(`${API}/quotes/${id}/status`, { status: newStatus });
+      const res = await axios.patch(`${API}/quotes/${id}/status`, { status: newStatus }, authHeaders);
       setQuotes((prev) => prev.map((q) => (q.id === id ? res.data : q)));
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 401) return handleLogout();
       alert('Failed to update quote status.');
     }
   };
 
   const handleUpdateConsultStatus = async (id, newStatus) => {
     try {
-      const res = await axios.patch(`${API}/consultations/${id}/status`, { status: newStatus });
+      const res = await axios.patch(`${API}/consultations/${id}/status`, { status: newStatus }, authHeaders);
       setConsultations((prev) => prev.map((c) => (c.id === id ? res.data : c)));
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 401) return handleLogout();
       alert('Failed to update consultation status.');
     }
   };
@@ -91,6 +137,87 @@ export default function Dashboard() {
 
   const totalPagesRemediated = quotes.reduce((acc, q) => acc + (q.estimated_pages || 0), 0);
 
+  // --- Login Gate ---
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] dark:bg-slate-950 p-4">
+        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="mb-4 rounded-2xl bg-[#0066FF] p-3 text-white shadow-md shadow-blue-500/20">
+              <Lock className="h-7 w-7" />
+            </div>
+            <h1 className="text-2xl font-extrabold text-[#0B192C] dark:text-white tracking-tight">
+              Admin Access
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Sign in to view the AccessVerse Compliance Dashboard.
+            </p>
+          </div>
+
+          {loginError && (
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl bg-red-50 p-3.5 text-sm text-red-700 dark:bg-red-950/20 dark:text-red-400 border border-red-100 dark:border-red-900/30" data-testid="admin-login-error">
+              <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
+              <p>{loginError}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label htmlFor="admin-username" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Username
+              </label>
+              <input
+                id="admin-username"
+                type="text"
+                autoComplete="username"
+                required
+                value={loginForm.username}
+                onChange={(e) => setLoginForm((p) => ({ ...p, username: e.target.value }))}
+                data-testid="admin-login-username"
+                placeholder="admin"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-sm transition focus-visible:ring-2 focus-visible:ring-[#0066FF] focus-visible:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              />
+            </div>
+            <div>
+              <label htmlFor="admin-password" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Password
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={loginForm.password}
+                onChange={(e) => setLoginForm((p) => ({ ...p, password: e.target.value }))}
+                data-testid="admin-login-password"
+                placeholder="••••••••"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-sm transition focus-visible:ring-2 focus-visible:ring-[#0066FF] focus-visible:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loginLoading}
+              data-testid="admin-login-submit"
+              className="w-full rounded-xl bg-[#0066FF] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {loginLoading ? (
+                <>
+                  <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <Lock className="h-4 w-4" />
+                  Sign In
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 bg-[#F8F9FA] dark:bg-slate-950 min-h-screen">
       {/* Top Banner */}
@@ -109,6 +236,14 @@ export default function Dashboard() {
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh Data
+        </button>
+        <button
+          onClick={handleLogout}
+          data-testid="admin-logout-btn"
+          className="flex items-center gap-1.5 self-start md:self-center px-4 py-2 text-xs font-semibold text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-200 hover:bg-red-50 rounded-xl transition dark:border-slate-800 dark:text-slate-400"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          Log Out
         </button>
       </div>
 

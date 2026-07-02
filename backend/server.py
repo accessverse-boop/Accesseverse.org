@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, status, Body
+from fastapi import FastAPI, APIRouter, HTTPException, status, Body, Depends, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,11 +6,13 @@ import os
 import logging
 import httpx
 import asyncio
+import bcrypt
+import jwt
 from pathlib import Path
 from pydantic import BaseModel, Field, BeforeValidator, EmailStr
 from typing import List, Optional, Annotated
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -34,6 +36,62 @@ db = client[DB_NAME]
 EMAIL_BASE_URL = "https://proxy.dev.emergentagent.com"
 EMAIL_KEY = os.environ.get("EMERGENT_EMAIL_KEY", "")
 EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "AccessVerse")
+
+# --- Auth setup (single admin gate) ---
+JWT_ALGORITHM = "HS256"
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
+def get_jwt_secret() -> str:
+    return os.environ["JWT_SECRET"]
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+
+def create_access_token(username: str) -> str:
+    payload = {
+        "sub": username,
+        "type": "access",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=8),
+    }
+    return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+
+async def get_current_admin(request: Request) -> str:
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header[7:] if auth_header.startswith("Bearer ") else None
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        admin = await db.admins.find_one({"username": payload.get("sub")})
+        if not admin:
+            raise HTTPException(status_code=401, detail="Admin not found")
+        return payload["sub"]
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def seed_admin():
+    existing = await db.admins.find_one({"username": ADMIN_USERNAME})
+    if existing is None:
+        await db.admins.insert_one({
+            "username": ADMIN_USERNAME,
+            "password_hash": hash_password(ADMIN_PASSWORD),
+            "created_at": datetime.now(timezone.utc),
+        })
+        logger.info(f"Seeded admin user '{ADMIN_USERNAME}'.")
+    elif not verify_password(ADMIN_PASSWORD, existing["password_hash"]):
+        await db.admins.update_one(
+            {"username": ADMIN_USERNAME},
+            {"$set": {"password_hash": hash_password(ADMIN_PASSWORD)}},
+        )
+        logger.info(f"Updated admin password for '{ADMIN_USERNAME}'.")
 
 # Coerce MongoDB ObjectId to str
 PyObjectId = Annotated[str, BeforeValidator(str)]
@@ -95,6 +153,10 @@ class ConsultationResponse(ConsultationCreate):
     id: str
     status: str
     created_at: datetime
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 # Create the main app without a prefix
 app = FastAPI(title="AccessVerse Digital Accessibility API")
@@ -178,6 +240,20 @@ async def root():
         "version": "1.0.0"
     }
 
+# --- Auth Endpoints ---
+
+@api_router.post("/auth/login")
+async def login(credentials: LoginRequest):
+    admin = await db.admins.find_one({"username": credentials.username})
+    if not admin or not verify_password(credentials.password, admin["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    token = create_access_token(credentials.username)
+    return {"token": token, "username": credentials.username}
+
+@api_router.get("/auth/me")
+async def get_me(username: str = Depends(get_current_admin)):
+    return {"username": username}
+
 # --- Quote Endpoints ---
 
 @api_router.post("/quotes", response_model=QuoteResponse, status_code=status.HTTP_201_CREATED)
@@ -247,7 +323,7 @@ async def create_quote_request(quote: QuoteCreate):
     )
 
 @api_router.get("/quotes", response_model=List[QuoteResponse])
-async def get_all_quotes():
+async def get_all_quotes(admin: str = Depends(get_current_admin)):
     raw_quotes = await db.quote_requests.find().sort("created_at", -1).to_list(1000)
     quotes = []
     for doc in raw_quotes:
@@ -268,7 +344,7 @@ async def get_all_quotes():
     return quotes
 
 @api_router.patch("/quotes/{quote_id}/status", response_model=QuoteResponse)
-async def update_quote_status(quote_id: str, payload: dict = Body(...)):
+async def update_quote_status(quote_id: str, payload: dict = Body(...), admin: str = Depends(get_current_admin)):
     new_status = payload.get("status")
     if not new_status:
         raise HTTPException(status_code=400, detail="Missing status in request body")
@@ -360,7 +436,7 @@ async def create_consultation(consultation: ConsultationCreate):
     )
 
 @api_router.get("/consultations", response_model=List[ConsultationResponse])
-async def get_all_consultations():
+async def get_all_consultations(admin: str = Depends(get_current_admin)):
     raw_consultations = await db.consultations.find().sort("created_at", -1).to_list(1000)
     consultations = []
     for doc in raw_consultations:
@@ -380,7 +456,7 @@ async def get_all_consultations():
     return consultations
 
 @api_router.patch("/consultations/{consultation_id}/status", response_model=ConsultationResponse)
-async def update_consultation_status(consultation_id: str, payload: dict = Body(...)):
+async def update_consultation_status(consultation_id: str, payload: dict = Body(...), admin: str = Depends(get_current_admin)):
     new_status = payload.get("status")
     if not new_status:
         raise HTTPException(status_code=400, detail="Missing status in request body")
@@ -413,6 +489,10 @@ async def update_consultation_status(consultation_id: str, payload: dict = Body(
 
 # Include the router in the main app
 app.include_router(api_router)
+
+@app.on_event("startup")
+async def startup_seed():
+    await seed_admin()
 
 app.add_middleware(
     CORSMiddleware,
