@@ -119,7 +119,7 @@ export default function QuoteFormModal({ isOpen, onClose }) {
               Request Received Successfully!
             </h2>
             <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
-              We&apos;ve logged your project scope and triggered a confirmation email to <strong>{formData.email}</strong>. 
+              We&apos;ve logged your project scope and triggered a confirmation email to your inbox. 
               Our compliance team will analyze your requirements and follow up with an actionable quote within 24 hours.
             </p>
             <button

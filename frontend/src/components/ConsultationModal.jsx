@@ -88,7 +88,7 @@ export default function ConsultationModal({ isOpen, onClose }) {
               Consultation Booked!
             </h2>
             <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
-              Your video consultation has been successfully requested. We have sent a calendar invite details to <strong>{formData.email}</strong>. 
+              Your video consultation has been successfully requested. We have sent the calendar invite details to your inbox. 
               Our accessibility directors will confirm the slot or provide alternative timing within 2 hours.
             </p>
             <div className="mt-6 text-xs text-left bg-slate-50 p-4 rounded-xl border dark:bg-slate-900/40 dark:border-slate-800 border-dashed space-y-2">
