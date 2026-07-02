@@ -1,0 +1,121 @@
+{
+  "theme": "LIGHT",
+  "archetype": "Archetype 4 (Swiss & High-Contrast) + Premium SaaS (Apple/Stripe Style)",
+  "colors": {
+    "background": "#FFFFFF",
+    "section_background": "#F8F9FA",
+    "text": "#0B192C",
+    "primary_accent": "#0066FF",
+    "secondary_accent": "#00B4D8",
+    "success": "#10B981",
+    "border": "#E2E8F0",
+    "glass_bg": "rgba(255, 255, 255, 0.7)",
+    "glass_border": "rgba(255, 255, 255, 0.2)"
+  },
+  "typography": {
+    "font_family_headings": "Inter, sans-serif",
+    "font_family_body": "Inter, sans-serif",
+    "h1": "text-5xl sm:text-6xl tracking-tighter font-semibold text-[#0B192C]",
+    "h2": "text-3xl sm:text-4xl tracking-tight font-medium text-[#0B192C]",
+    "h3": "text-xl sm:text-2xl font-medium text-[#0B192C]",
+    "body": "text-base sm:text-lg text-[#0B192C]/70 leading-relaxed",
+    "overline": "text-sm font-semibold tracking-widest uppercase text-[#0066FF]"
+  },
+  "layout_and_spacing": {
+    "padding_generous": "p-8 md:p-12 lg:p-16",
+    "section_gap": "py-24 md:py-32",
+    "border_radius_large": "rounded-2xl md:rounded-3xl",
+    "border_radius_base": "rounded-xl",
+    "shadows": "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+    "glass_effect": "backdrop-blur-xl bg-white/70 border border-white/20 shadow-sm"
+  },
+  "animations": {
+    "smooth_scroll": "Lenis library for momentum scrolling",
+    "fade_in_up": "Framer motion, initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }",
+    "hover_lift": "transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg",
+    "staggered_list": "Framer motion staggerChildren: 0.1",
+    "reduced_motion": "Respect prefers-reduced-motion media query via Framer Motion"
+  },
+  "accessibility_requirements": {
+    "focus_state": "focus-visible:ring-2 focus-visible:ring-[#0066FF] focus-visible:ring-offset-2 focus-visible:outline-none",
+    "contrast": "Ensure all text meets WCAG 2.2 AA minimum 4.5:1 ratio",
+    "aria": "Use semantic tags, correct heading levels (H1 -> H2 -> H3), and proper aria-labels",
+    "data_testid": "All interactive elements MUST have data-testid attributes (e.g., data-testid='quote-submit-btn')",
+    "forms": "Accessible form validation with error messages tied to inputs via aria-describedby"
+  },
+  "features": {
+    "floating_accessibility_panel": "Interactive fixed panel toggling contrast, text scale, and screen reader visual simulator.",
+    "comparison_slider": "Interactive before/after slider comparing untagged PDF vs fully tagged screen-reader compliant PDF structure.",
+    "quote_form": "Integrates with FastAPI backend to store in MongoDB.",
+    "email_alerts": "FastAPI to trigger Resend email on new quote submission."
+  },
+  "pages": {
+    "homepage": {
+      "sections": [
+        "Hero: High-impact outcome headline, large whitespace, floating UI dashboard elements, primary 'Request Quote' CTA",
+        "Trust Section: Monochromatic logos of Enterprise, Gov, Healthcare clients to build instant credibility",
+        "Services: Bento grid layout highlighting PDF Remediation, Web Audits, WCAG/ADA Compliance",
+        "Why Choose AccessVerse: Technical depth showcasing expertise in VPAT and Section 508",
+        "Process: Animated vertical or horizontal timeline explaining the audit to remediation lifecycle",
+        "Before & After Accessibility: The interactive comparison slider component",
+        "Testimonials: Elegant cards with soft shadows and professional headshots",
+        "FAQ: Minimalist Shadcn Accordion",
+        "Call To Action: High-contrast soft blue/cyan subtle gradient container, bold typography",
+        "Footer: Clean, expansive, semantic links with a sophisticated layout"
+      ]
+    },
+    "dashboard": {
+      "sections": [
+        "Quote-Request Review Dashboard: A clean, functional internal dashboard to view submissions stored in MongoDB."
+      ]
+    }
+  },
+  "media": {
+    "hero_abstract": [
+      {
+        "url": "https://images.pexels.com/photos/18375373/pexels-photo-18375373.jpeg",
+        "description": "Futuristic ceiling showcasing modern architectural design. Use for subtle abstract tech background."
+      }
+    ],
+    "trust_logos": [
+      {
+        "url": "https://images.unsplash.com/photo-1731091484289-ab997964d073?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTJ8MHwxfHNlYXJjaHwyfHx1bml2ZXJzaXR5JTIwaG9zcGl0YWwlMjBsb2dvfGVufDB8fHx8MTc4MjcyMTQ2NXww&ixlib=rb-4.1.0&q=85",
+        "description": "University/Hospital placeholder logo for Trust Section (convert to grayscale)"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1719920047220-d61e47a8fe45?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTJ8MHwxfHNlYXJjaHwxfHx1bml2ZXJzaXR5JTIwaG9zcGl0YWwlMjBsb2dvfGVufDB8fHx8MTc4MjcyMTQ2NXww&ixlib=rb-4.1.0&q=85",
+        "description": "Enterprise Building placeholder for Trust Section (convert to grayscale)"
+      }
+    ],
+    "testimonials": [
+      {
+        "url": "https://images.pexels.com/photos/26872232/pexels-photo-26872232.jpeg",
+        "description": "Professional headshot for Testimonial 1"
+      },
+      {
+        "url": "https://images.pexels.com/photos/31869537/pexels-photo-31869537.jpeg",
+        "description": "Professional headshot for Testimonial 2"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwzfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4MjkzNjIzMHww&ixlib=rb-4.1.0&q=85",
+        "description": "Professional headshot for Testimonial 3"
+      }
+    ]
+  },
+  "libraries": {
+    "animation": ["framer-motion", "lenis"],
+    "icons": ["lucide-react"],
+    "components": ["shadcn/ui", "radix-ui"],
+    "backend": ["fastapi", "motor", "resend"]
+  },
+  "instructions_to_main_agent": [
+    "Design Phase 1 Focus: Build the Design System and the Homepage, plus a clean quote-request review dashboard for submissions.",
+    "Follow the 'Apple/Stripe' premium SaaS aesthetic: Pure white backgrounds, extremely clean spacing, soft inner shadows, and high contrast typography.",
+    "Typography Rule: The user strictly requested 'Inter'. Use Inter for everything. Make headings look premium by using tight tracking (e.g., tracking-tight or tracking-tighter) and semi-bold/medium weights.",
+    "Build a custom 'Floating Accessibility Panel' (fixed positioning) that actually toggles text scale and contrast. This proves the company's expertise.",
+    "Build the Before/After Comparison Slider to compare code/tagging representations (e.g., untagged PDF vs fully tagged screen-reader compliant PDF).",
+    "Integrate Shadcn UI components but customize them to remove the default 'Vercel' look; use the defined border radii (rounded-xl/2xl) and soft shadows.",
+    "Backend: Set up FastAPI to handle quote submissions, store them in MongoDB, and trigger an email via Resend.",
+    "CRITICAL: All interactive elements MUST have a data-testid attribute for automated testing."
+  ]
+}
