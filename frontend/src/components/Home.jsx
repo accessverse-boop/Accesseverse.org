@@ -216,6 +216,7 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-3.5 pt-2">
                   <button
                     onClick={() => setIsQuoteOpen(true)}
+                    data-testid={ACCESS_VERSE.quoteRequestBtn}
                     className="rounded-xl bg-[#0066FF] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/10 hover:bg-blue-700 hover:-translate-y-0.5 transition duration-200 flex items-center justify-center gap-2"
                   >
                     Get Free Quote

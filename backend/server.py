@@ -5,6 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import httpx
+import asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field, BeforeValidator, EmailStr
 from typing import List, Optional, Annotated
@@ -223,13 +224,13 @@ async def create_quote_request(quote: QuoteCreate):
     </table>
     """
     
-    # Send email notification asynchronously (we won't block the API response on email completion failure)
-    await send_notification_email(
+    # Send email notification without blocking the API response
+    asyncio.create_task(send_notification_email(
         recipient_email=quote.email,
         recipient_name=quote.name,
         form_type="Quote Request",
         details_html=details_html
-    )
+    ))
     
     # Return response model
     return QuoteResponse(
