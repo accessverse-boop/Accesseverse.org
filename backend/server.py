@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, status
+from fastapi import FastAPI, APIRouter, HTTPException, status, Body
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -267,7 +267,7 @@ async def get_all_quotes():
     return quotes
 
 @api_router.patch("/quotes/{quote_id}/status", response_model=QuoteResponse)
-async def update_quote_status(quote_id: str, payload: dict = Field(..., description="Contains 'status' field")):
+async def update_quote_status(quote_id: str, payload: dict = Body(...)):
     new_status = payload.get("status")
     if not new_status:
         raise HTTPException(status_code=400, detail="Missing status in request body")
@@ -379,7 +379,7 @@ async def get_all_consultations():
     return consultations
 
 @api_router.patch("/consultations/{consultation_id}/status", response_model=ConsultationResponse)
-async def update_consultation_status(consultation_id: str, payload: dict = Field(..., description="Contains 'status' field")):
+async def update_consultation_status(consultation_id: str, payload: dict = Body(...)):
     new_status = payload.get("status")
     if not new_status:
         raise HTTPException(status_code=400, detail="Missing status in request body")
