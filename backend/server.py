@@ -93,6 +93,43 @@ async def seed_admin():
         )
         logger.info(f"Updated admin password for '{ADMIN_USERNAME}'.")
 
+# --- Login rate limiting (brute-force protection) ---
+# 5 failed attempts -> 1 minute lock; 10+ failed attempts -> 10 minute lock.
+
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+async def check_login_lock(identifier: str):
+    record = await db.login_attempts.find_one({"identifier": identifier})
+    if record and record.get("locked_until"):
+        locked_until = record["locked_until"]
+        if locked_until.tzinfo is None:
+            locked_until = locked_until.replace(tzinfo=timezone.utc)
+        if locked_until > datetime.now(timezone.utc):
+            remaining = int((locked_until - datetime.now(timezone.utc)).total_seconds())
+            raise HTTPException(
+                status_code=429,
+                detail=f"Too many failed attempts. Try again in {remaining} second(s).",
+            )
+
+async def register_failed_attempt(identifier: str):
+    record = await db.login_attempts.find_one({"identifier": identifier})
+    count = (record.get("count", 0) if record else 0) + 1
+    update = {"count": count, "last_attempt": datetime.now(timezone.utc)}
+    if count >= 10:
+        update["locked_until"] = datetime.now(timezone.utc) + timedelta(minutes=10)
+    elif count >= 5:
+        update["locked_until"] = datetime.now(timezone.utc) + timedelta(minutes=1)
+    await db.login_attempts.update_one(
+        {"identifier": identifier}, {"$set": update}, upsert=True
+    )
+
+async def clear_login_attempts(identifier: str):
+    await db.login_attempts.delete_one({"identifier": identifier})
+
 # Coerce MongoDB ObjectId to str
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
@@ -243,10 +280,14 @@ async def root():
 # --- Auth Endpoints ---
 
 @api_router.post("/auth/login")
-async def login(credentials: LoginRequest):
+async def login(credentials: LoginRequest, request: Request):
+    identifier = f"{get_client_ip(request)}:{credentials.username}"
+    await check_login_lock(identifier)
     admin = await db.admins.find_one({"username": credentials.username})
     if not admin or not verify_password(credentials.password, admin["password_hash"]):
+        await register_failed_attempt(identifier)
         raise HTTPException(status_code=401, detail="Invalid username or password")
+    await clear_login_attempts(identifier)
     token = create_access_token(credentials.username)
     return {"token": token, "username": credentials.username}
 
