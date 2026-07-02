@@ -138,7 +138,7 @@ async def send_notification_email(recipient_email: str, recipient_name: str, for
 
         <div style="border-top: 1px solid #E2E8F0; padding-top: 20px; text-align: left; font-size: 12px; color: #0B192C; opacity: 0.5; line-height: 1.5;">
             <p style="margin: 0 0 5px 0;">AccessVerse.org — Making Digital Content Accessible for Everyone.</p>
-            <p style="margin: 0;">This email is sent automatically. If you did not make this request, please reply to us at info@accessverse.org.</p>
+            <p style="margin: 0;">This email is sent automatically. If you did not make this request, please reply to us at accessverse@gmail.com.</p>
         </div>
     </div>
     """
